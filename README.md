@@ -9,6 +9,11 @@
 
 ```deactivate```
 
+## 優先安裝
+
+```pip install llama-index llama-index-llms-ollama llama-index-embeddings-ollama fastapi uvicorn python-dotenv
+```
+
 ## 快速生成 requirements.txt
 ```pip freeze > requirements.txt```
 
