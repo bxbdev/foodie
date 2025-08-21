@@ -6,6 +6,7 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.core.prompts import PromptTemplate
+from llama_index.core.memory import ChatMemoryBuffer
 from file_monitor import FileMonitor  # 匯入我們的檔案監控系統
 
 # 載入環境變數
@@ -28,15 +29,21 @@ Settings.embed_model = OllamaEmbedding(
     base_url=OLLAMA_URL
 )
 
+
 # 設定目錄路徑
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 persist_dir = BASE_DIR / "storage"
 
+memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
 qa_tmpl = PromptTemplate(
-    "你是嚴謹的企業助理。只根據提供的內容回答"
-    "\n\n[內容]\n{context_str}\n\n[問題]\n{query_str}"
-    "\n\n若內容不足，請回答：不知道。"
+    "你是專業的客服助理。根據提供的退貨政策內容回答問題，需要合理推理相關條款。"
+    "\n\n[退貨政策內容]\n{context_str}\n\n[客戶問題]\n{query_str}"
+    "\n\n回答指引："
+    "\n- 仔細分析所有相關條款"
+    "\n- 提供明確的答案和依據"
+    "\n- 如果有灰色地帶，建議聯絡客服"
+    "\n- 只有在政策完全沒有涉及時才回答「不知道」"
 )
 
 def create_or_load_index():
@@ -110,12 +117,14 @@ def main():
     # 執行智能索引管理
     index = create_or_load_index()
     
-    # 建立查詢引擎
-    print("\n[查詢] 準備查詢引擎...")
-    qe = index.as_query_engine(
+    # 建立帶記憶功能的聊天引擎
+    print("\n[查詢] 準備聊天引擎...")
+    qe = index.as_chat_engine(
+        chat_mode="condense_question",
+        memory=memory,
         similarity_top_k=5, 
-        response_mode="compact", 
-        text_qa_template=qa_tmpl
+        text_qa_template=qa_tmpl,
+        verbose=True
     )
     
     # 開始互動式查詢
@@ -138,9 +147,9 @@ def main():
                 print("請輸入一個問題...")
                 continue
             
-            # 執行查詢
+            # 執行聊天查詢
             print(f"\n[查詢] 正在搜尋: {question}")
-            response = qe.query(question)
+            response = qe.chat(question)
             print(f"[答案] {response.response}")
             
         except KeyboardInterrupt:
