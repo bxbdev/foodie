@@ -148,7 +148,7 @@ class FileMonitor:
 # 測試用的主程式
 if __name__ == "__main__":
     # 建立檔案監控器
-    base_dir = Path(__file__).resolve().parent
+    base_dir = Path(__file__).resolve().parent.parent
     data_dir = base_dir / "data"
     
     monitor = FileMonitor(data_dir)

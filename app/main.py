@@ -3,7 +3,13 @@ from decimal import Decimal
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-app = FastAPI()
+# 導入聊天路由
+from api.v1.chat.endpoints import router as chat_router
+
+app = FastAPI(title="Foodie API", description="美食平台 API", version="1.0.0")
+
+# 註冊聊天路由
+app.include_router(chat_router, prefix="/api/v1/chat", tags=["聊天"])
 
 class Item(BaseModel):
     name: str
