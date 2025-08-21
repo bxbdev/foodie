@@ -46,3 +46,14 @@
 }
 ```
 
+# 啟動指令
+
+進到入 `foodie\app` 目錄
+
+### 方式 1: 使用整合後的聊天應用
+
+```uvicorn chat_app:app --reload --host 0.0.0.0 --port 8000```
+
+### 方式 2: 使用模組化 API (如果想用 main.py)
+
+```uvicorn main:app --reload --host 0.0.0.0 --port 8000```

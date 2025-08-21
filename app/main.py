@@ -1,12 +1,22 @@
 from typing import Union
 from decimal import Decimal
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # 導入聊天路由
 from api.v1.chat.endpoints import router as chat_router
 
 app = FastAPI(title="Foodie API", description="美食平台 API", version="1.0.0")
+
+# 添加 CORS 中間件
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 允許所有來源，生產環境應該指定具體域名
+    allow_credentials=True,
+    allow_methods=["*"],  # 允許所有 HTTP 方法
+    allow_headers=["*"],  # 允許所有標頭
+)
 
 # 註冊聊天路由
 app.include_router(chat_router, prefix="/api/v1/chat", tags=["聊天"])

@@ -6,6 +6,7 @@ import asyncio
 from typing import Optional
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # 使用新的架構導入
@@ -14,6 +15,15 @@ from services.rag_service import rag_service
 
 
 app = FastAPI(title="RAG 聊天 API", description="智能客服聊天系統", version="1.0.0")
+
+# 添加 CORS 中間件
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 允許所有來源，生產環境應該指定具體域名
+    allow_credentials=True,
+    allow_methods=["*"],  # 允許所有 HTTP 方法
+    allow_headers=["*"],  # 允許所有標頭
+)
 
 
 class ChatRequest(BaseModel):
