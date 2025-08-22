@@ -25,7 +25,9 @@ class SessionManager:
                 'memory': Memory.from_defaults(token_limit=3000),
                 'chat_engine': None,  # 將在需要時初始化
                 'created_at': time.time(),
-                'last_access': time.time()
+                'last_access': time.time(),
+                'is_aborted': False,  # 中止狀態
+                'is_processing': False  # 處理狀態
             }
         
         return session_id
@@ -87,6 +89,44 @@ class SessionManager:
             if session_id in self.sessions:
                 del self.sessions[session_id]
                 return True
+            return False
+    
+    def abort_session(self, session_id: str) -> bool:
+        """中止指定會話的當前對話"""
+        with self.lock:
+            if session_id in self.sessions:
+                self.sessions[session_id]['is_aborted'] = True
+                return True
+            return False
+    
+    def is_session_aborted(self, session_id: str) -> bool:
+        """檢查會話是否被中止"""
+        with self.lock:
+            if session_id in self.sessions:
+                return self.sessions[session_id]['is_aborted']
+            return False
+    
+    def reset_session_abort(self, session_id: str) -> bool:
+        """重置會話的中止狀態"""
+        with self.lock:
+            if session_id in self.sessions:
+                self.sessions[session_id]['is_aborted'] = False
+                return True
+            return False
+    
+    def set_processing_status(self, session_id: str, is_processing: bool) -> bool:
+        """設置會話的處理狀態"""
+        with self.lock:
+            if session_id in self.sessions:
+                self.sessions[session_id]['is_processing'] = is_processing
+                return True
+            return False
+    
+    def is_session_processing(self, session_id: str) -> bool:
+        """檢查會話是否正在處理"""
+        with self.lock:
+            if session_id in self.sessions:
+                return self.sessions[session_id]['is_processing']
             return False
 
 
