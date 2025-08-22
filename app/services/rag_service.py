@@ -8,7 +8,7 @@ from llama_index.core import Settings, VectorStoreIndex, StorageContext, load_in
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.core.prompts import PromptTemplate
-from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.core.memory import Memory
 from utils.file_monitor import FileMonitor
 
 
@@ -118,25 +118,27 @@ class RAGService:
         
         return index
     
-    def create_chat_engine(self, memory: ChatMemoryBuffer):
+    def create_chat_engine(self, memory: Memory):
         """為指定的記憶創建聊天引擎"""
         qa_tmpl = PromptTemplate(
-            "你是專業的客服助理。根據提供的退貨政策內容回答問題。請根據問題的複雜度給出合適長度的回答。"
+            "你是專業的客服助理。根據對話歷史和退貨政策來回答客戶問題。"
             "\n\n[退貨政策內容]\n{context_str}\n\n[客戶問題]\n{query_str}"
-            "\n\n回答指引："
-            "\n- 如果是簡單的意圖表達（如「我要退貨」），給出簡潔的引導性回應，詢問具體需求"
-            "\n- 如果是具體問題（如「退貨期限多久」），提供明確答案和依據"
-            "\n- 避免無關資訊，只回答與問題直接相關的內容"
-            "\n- 保持回答簡潔明了，不要複製整個政策內容"
-            "\n- 如果政策不涉及，建議聯絡客服"
+            "\n\n重要指引："
+            "\n1. 仔細讀取對話歷史，準確記錄客戶已提供的資訊"
+            "\n2. 絕對不要重複已說過的內容或要求已提供的資訊"
+            "\n3. 如果客戶表示感謝、滿意或「沒問題了」，請簡潔回應：「好的，感謝您的配合。如有其他問題歡迎隨時聯繫我們！」"
+            "\n4. 每次只回應一個段落，不要重複同樣的內容"
+            "\n5. 準確引用客戶提供的訂單編號、姓名等資訊"
+            "\n6. 保持專業且簡潔的語調"
         )
         
         return self.index.as_chat_engine(
-            chat_mode="condense_question",
+            chat_mode="context",  # 改用 context 模式，更好處理對話歷史
             memory=memory,
-            similarity_top_k=3,  # 減少檢索數量，避免資訊過載
+            similarity_top_k=2,  # 進一步減少檢索數量
             text_qa_template=qa_tmpl,
-            verbose=True
+            verbose=False,  # 關閉詳細輸出
+            system_prompt="你是專業的客服助理，請根據對話歷史提供簡潔準確的回應，避免重複內容。"
         )
     
     def get_index(self):

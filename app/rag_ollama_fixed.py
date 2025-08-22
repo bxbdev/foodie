@@ -6,7 +6,7 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.llms.ollama import Ollama
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.core.prompts import PromptTemplate
-from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.core.memory import Memory
 from file_monitor import FileMonitor  # 匯入我們的檔案監控系統
 
 # 載入環境變數
@@ -35,7 +35,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 persist_dir = BASE_DIR / "storage"
 
-memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
+memory = Memory.from_defaults(token_limit=3000)
 qa_tmpl = PromptTemplate(
     "你是專業的客服助理。根據提供的退貨政策內容回答問題，需要合理推理相關條款。"
     "\n\n[退貨政策內容]\n{context_str}\n\n[客戶問題]\n{query_str}"

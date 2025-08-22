@@ -5,7 +5,7 @@ import uuid
 import time
 from typing import Dict, Optional, Any
 from threading import Lock
-from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.core.memory import Memory
 
 
 class SessionManager:
@@ -22,7 +22,7 @@ class SessionManager:
         
         with self.lock:
             self.sessions[session_id] = {
-                'memory': ChatMemoryBuffer.from_defaults(token_limit=3000),
+                'memory': Memory.from_defaults(token_limit=3000),
                 'chat_engine': None,  # 將在需要時初始化
                 'created_at': time.time(),
                 'last_access': time.time()
@@ -40,7 +40,7 @@ class SessionManager:
             session['last_access'] = time.time()
             return session
     
-    def get_or_create_memory(self, session_id: str) -> ChatMemoryBuffer:
+    def get_or_create_memory(self, session_id: str) -> Memory:
         """獲取或創建會話記憶"""
         session = self.get_session(session_id)
         if session is None:
