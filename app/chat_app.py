@@ -46,6 +46,61 @@ async def create_chat_session():
     )
 
 
+def is_simple_greeting_or_test(message: str) -> bool:
+    """檢查是否為簡單的問候或測試輸入"""
+    message = message.strip().lower()
+    simple_inputs = {
+        "測試", "test", "嗨", "hi", "hello", "你好", "哈囉", "halo",
+        "在嗎", "在不在", "有人嗎", "可以聊天嗎", "可以說話嗎",
+        "!", "？", "?", "嘿", "hey", "yo", "哇", "wow"
+    }
+    return message in simple_inputs or len(message) <= 3
+
+def is_return_related(message: str) -> bool:
+    """判斷消息是否與退貨相關"""
+    message = message.strip().lower()
+    
+    # 退貨相關關鍵詞
+    return_keywords = {
+        "退貨", "退款", "退回", "換貨", "退換", "不滿意", "有問題", "壞了", "破損",
+        "瑕疵", "不合適", "尺寸不對", "顏色不對", "收到錯誤", "想退",
+        "申請退", "辦理退", "如何退", "退貨流程", "退貨期限", "退貨條件",
+        "退貨政策", "退貨規定", "可以退嗎", "能退嗎", "退貨費用"
+    }
+    
+    return any(keyword in message for keyword in return_keywords)
+
+def get_simple_response(message: str) -> str:
+    """為簡單輸入提供合適的回應"""
+    message = message.strip().lower()
+    
+    if message in ["測試", "test"]:
+        return "系統運行正常！有什麼關於退貨政策的問題我可以幫您解答嗎？"
+    elif message in ["嗨", "hi", "hello", "你好", "哈囉", "halo"]:
+        return "您好！我是客服助理，專門協助處理退貨相關問題。請問有什麼需要幫助的嗎？"
+    elif message in ["在嗎", "在不在", "有人嗎"]:
+        return "是的，我在線上！有什麼退貨問題需要協助嗎？"
+    else:
+        return "您好！我是智能客服助理，專門回答退貨政策相關問題。請具體描述您的問題，我會盡力為您解答。"
+
+def get_general_llm_response(message: str) -> str:
+    """使用LLM直接回答非退貨相關問題"""
+    # 導入Ollama LLM
+    from services.rag_service import rag_service
+    from llama_index.core import Settings
+    
+    llm = Settings.llm
+    
+    prompt = f"""你是一個友善的智能助理。請直接回答用戶的問題，但要提醒用戶我主要專長是協助退貨相關問題。
+
+用戶問題：{message}
+
+請提供簡潔有用的回答，並在最後提及如果有退貨相關問題可以詢問我。"""
+    
+    response = llm.complete(prompt)
+    return response.text
+
+
 @app.post("/api/chat/stream")
 async def chat_stream(request: ChatRequest):
     """SSE 串流聊天端點"""
@@ -73,13 +128,20 @@ async def chat_stream(request: ChatRequest):
             # 發送開始信號
             yield f"data: {json.dumps({'type': 'start', 'message': '正在思考...'})}\n\n"
             
-            # 執行 RAG 查詢
-            response = chat_engine.chat(request.message)
+            # 三層智能判斷：1) 簡單問候 2) 退貨相關 3) 一般問題
+            if is_simple_greeting_or_test(request.message):
+                # 第一層：簡單問候語，直接回應
+                answer = get_simple_response(request.message)
+            elif is_return_related(request.message):
+                # 第二層：退貨相關問題，使用RAG檢索
+                response = chat_engine.chat(request.message)
+                answer = response.response
+            else:
+                # 第三層：非退貨問題，使用LLM直接回答
+                answer = get_general_llm_response(request.message)
             
-            # 模擬串流效果（將回答分段發送）
-            answer = response.response
+            # 統一的串流效果（將回答分段發送）
             words = answer.split()
-            
             current_text = ""
             for i, word in enumerate(words):
                 current_text += word + " "

@@ -34,7 +34,7 @@ class RAGService:
         
         # 設置 LLM 和 Embedding
         Settings.llm = Ollama(
-            model=models[2],
+            model=models[0],
             base_url=OLLAMA_URL,
             request_timeout=120.0,
         )
@@ -121,19 +121,20 @@ class RAGService:
     def create_chat_engine(self, memory: ChatMemoryBuffer):
         """為指定的記憶創建聊天引擎"""
         qa_tmpl = PromptTemplate(
-            "你是專業的客服助理。根據提供的退貨政策內容回答問題，需要合理推理相關條款。"
+            "你是專業的客服助理。根據提供的退貨政策內容回答問題。請根據問題的複雜度給出合適長度的回答。"
             "\n\n[退貨政策內容]\n{context_str}\n\n[客戶問題]\n{query_str}"
             "\n\n回答指引："
-            "\n- 仔細分析所有相關條款"
-            "\n- 提供明確的答案和依據"
-            "\n- 如果有灰色地帶，建議聯絡客服"
-            "\n- 只有在政策完全沒有涉及時才回答「不知道」"
+            "\n- 如果是簡單的意圖表達（如「我要退貨」），給出簡潔的引導性回應，詢問具體需求"
+            "\n- 如果是具體問題（如「退貨期限多久」），提供明確答案和依據"
+            "\n- 避免無關資訊，只回答與問題直接相關的內容"
+            "\n- 保持回答簡潔明了，不要複製整個政策內容"
+            "\n- 如果政策不涉及，建議聯絡客服"
         )
         
         return self.index.as_chat_engine(
             chat_mode="condense_question",
             memory=memory,
-            similarity_top_k=5,
+            similarity_top_k=3,  # 減少檢索數量，避免資訊過載
             text_qa_template=qa_tmpl,
             verbose=True
         )
